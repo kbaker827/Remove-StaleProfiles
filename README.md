@@ -6,7 +6,7 @@ A PowerShell script that scans all Windows user profiles on a machine and remove
 
 - **Dry run by default** — shows exactly what would be deleted and how much disk space would be freed before anything is touched
 - **Per-profile size reporting** — calculates the actual folder size of each stale profile so you know the impact upfront
-- **Smart skipping** — automatically skips system accounts, built-in profiles (`Default`, `Public`), and any profile that is currently loaded/active
+- **Smart skipping** — automatically skips system accounts, built-in profiles (`Default`, `Public`), any profile that is currently loaded/active, and any profile containing a OneDrive folder
 - **Full cleanup** — uses `Win32_UserProfile` via CIM to remove both the profile folder and the registry entry in one operation
 - **Logging** — writes a timestamped log file for every run (default: `C:\Logs\Remove-StaleProfiles.log`)
 - **Configurable threshold** — defaults to 90 days, adjustable via parameter
@@ -74,6 +74,15 @@ A PowerShell script that scans all Windows user profiles on a machine and remove
 3. Checks `LastUseTime` from WMI; falls back to the folder's last-write time if unavailable
 4. In dry-run mode, recursively calculates each stale profile's folder size and reports the total space that would be freed
 5. In live mode, calls `Remove-CimInstance` on the `Win32_UserProfile` object — this removes both `C:\Users\<name>` and the registry key under `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList`
+
+## OneDrive
+
+Profiles that contain a OneDrive folder (e.g. `OneDrive`, `OneDrive - CompanyName`) are automatically skipped with a warning. This avoids two problems:
+
+- Deleting a profile mid-sync can corrupt the OneDrive sync state
+- A user returning after profile deletion would trigger a full re-sync from the cloud
+
+These profiles are logged as `SKIP (OneDrive)` and counted in the skipped total. To handle them, offboard the user's OneDrive first, then re-run the script.
 
 ## Notes
 

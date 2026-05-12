@@ -164,6 +164,13 @@ foreach ($profile in $profiles) {
         }
     }
 
+    # ── Skip profiles with OneDrive ─────────────────────────────────────────
+    if (Test-Path (Join-Path $path "OneDrive*")) {
+        Write-Log "SKIP (OneDrive)  : $username  [$path] — OneDrive folder present, skipping to avoid sync issues" 'WARN'
+        $skipped++
+        continue
+    }
+
     # ── Check age ────────────────────────────────────────────────────────────
     if ($lastUsed -ge $cutoff) {
         $age = [math]::Round(((Get-Date) - $lastUsed).TotalDays)
