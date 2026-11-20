@@ -1,0 +1,38 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pester:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        shell: [pwsh, powershell]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pester 5 and PSScriptAnalyzer
+        shell: ${{ matrix.shell }}
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+
+      - name: Lint (errors only)
+        shell: ${{ matrix.shell }}
+        run: |
+          $issues = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
+          $issues | Format-Table -AutoSize
+          if ($issues) { exit 1 }
+
+      - name: Run tests
+        shell: ${{ matrix.shell }}
+        run: |
+          Import-Module Pester -MinimumVersion 5.5.0
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests'
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config
